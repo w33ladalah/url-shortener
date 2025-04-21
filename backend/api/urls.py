@@ -5,8 +5,10 @@ import string
 from database.database import get_db
 from database.redis import redis_client
 from models.url import URL
+from models.user import User
 from schemas.url import URLCreate, URL as URLSchema
 from fastapi.responses import RedirectResponse
+from api.auth import get_current_user
 
 router = APIRouter()
 
@@ -15,7 +17,7 @@ def generate_short_code(length=6):
     return ''.join(random.choice(chars) for _ in range(length))
 
 @router.post("/shorten", response_model=URLSchema)
-def create_short_url(url: URLCreate, db: Session = Depends(get_db)):
+def create_short_url(url: URLCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     # Use custom short code if provided and valid
     if url.custom_short_code:
         # Check if custom short code already exists
@@ -33,7 +35,11 @@ def create_short_url(url: URLCreate, db: Session = Depends(get_db)):
         while db.query(URL).filter(URL.short_code == short_code).first():
             short_code = generate_short_code()
 
-    db_url = URL(original_url=str(url.original_url), short_code=short_code)
+    db_url = URL(
+        original_url=str(url.original_url),
+        short_code=short_code,
+        user_id=current_user.id
+    )
     db.add(db_url)
     db.commit()
     db.refresh(db_url)
@@ -41,13 +47,20 @@ def create_short_url(url: URLCreate, db: Session = Depends(get_db)):
     return db_url
 
 @router.get("/stats/{short_code}", response_model=URLSchema)
-def get_url_stats(short_code: str, db: Session = Depends(get_db)):
+def get_url_stats(short_code: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db_url = db.query(URL).filter(URL.short_code == short_code).first()
 
     if db_url is None:
         raise HTTPException(status_code=404, detail="URL not found")
 
+    if db_url.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this URL's stats")
+
     return db_url
+
+@router.get("/my-urls", response_model=list[URLSchema])
+def get_user_urls(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return db.query(URL).filter(URL.user_id == current_user.id).all()
 
 @router.get("/{short_code}")
 def redirect_to_url(short_code: str, db: Session = Depends(get_db)):
