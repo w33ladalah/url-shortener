@@ -18,6 +18,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount the router at the /api/urls path
 app.include_router(urls_router, prefix="/api/urls", tags=["urls"])
 
 @app.get("/")
