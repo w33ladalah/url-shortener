@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom'
-import { Container, Nav, Navbar, Row, Col, Form, Button, Card, Alert, Toast } from 'react-bootstrap'
+import { Container, Nav, Navbar, Row, Col, Form, Button, Card, Alert, Toast, Spinner } from 'react-bootstrap'
 import { Login } from './components/Login'
 import { Register } from './components/Register'
+import { Dashboard } from './components/Dashboard'
+import { Profile } from './components/Profile'
 import { useAuth } from './contexts/AuthContext'
 import { shortenUrl } from './services/api'
 import './App.css'
@@ -147,8 +149,32 @@ function Home() {
   )
 }
 
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="text-center py-5">
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
+}
+
 function App() {
-  const { user } = useAuth()
+  const { user, logout, loading } = useAuth()
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <Router>
@@ -159,10 +185,22 @@ function App() {
             <Navbar.Toggle aria-controls="basic-navbar-nav" />
             <Navbar.Collapse id="basic-navbar-nav">
               <Nav className="ms-auto">
-                {user ? (
+                {loading ? (
+                  <Spinner animation="border" size="sm" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                  </Spinner>
+                ) : user ? (
                   <>
                     <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
                     <Nav.Link as={Link} to="/profile">Profile</Nav.Link>
+                    <Button
+                      variant="outline-danger"
+                      size="sm"
+                      onClick={handleLogout}
+                      className="ms-2 my-1"
+                    >
+                      Logout
+                    </Button>
                   </>
                 ) : (
                   <>
@@ -182,11 +220,19 @@ function App() {
             <Route path="/register" element={<Register />} />
             <Route
               path="/dashboard"
-              element={user ? <div>Dashboard (Coming Soon)</div> : <Navigate to="/login" />}
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/profile"
-              element={user ? <div>Profile (Coming Soon)</div> : <Navigate to="/login" />}
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
             />
           </Routes>
         </Container>

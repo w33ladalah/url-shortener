@@ -28,8 +28,10 @@ export function Login() {
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         setError('Invalid email or password');
+      } else if (err instanceof Error) {
+        setError(err.message);
       } else {
-        setError(err instanceof Error ? err.message : 'Login failed');
+        setError('Login failed');
       }
     } finally {
       setLoading(false);
@@ -54,8 +56,9 @@ export function Login() {
             )}
             <Form onSubmit={handleSubmit}>
               <Form.Group className="mb-3">
-                <Form.Label>Email</Form.Label>
+                <Form.Label htmlFor="email">Email</Form.Label>
                 <Form.Control
+                  id="email"
                   type="email"
                   name="email"
                   value={credentials.email}
@@ -66,8 +69,9 @@ export function Login() {
               </Form.Group>
 
               <Form.Group className="mb-4">
-                <Form.Label>Password</Form.Label>
+                <Form.Label htmlFor="password">Password</Form.Label>
                 <Form.Control
+                  id="password"
                   type="password"
                   name="password"
                   value={credentials.password}

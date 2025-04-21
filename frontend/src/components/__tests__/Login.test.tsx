@@ -1,14 +1,20 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { Login } from '../Login';
 import { AuthProvider } from '../../contexts/AuthContext';
 import * as api from '../../services/api';
+import { LoginResponse, LoginCredentials } from '../../types';
 
 // Mock the API module
 vi.mock('../../services/api', () => ({
   login: vi.fn(),
+  setAuthToken: vi.fn(),
+  getCurrentUser: vi.fn().mockResolvedValue({
+    id: 1,
+    email: 'test@example.com'
+  })
 }));
 
 // Mock useNavigate
@@ -45,7 +51,11 @@ describe('Login Component', () => {
 
   it('handles successful login', async () => {
     const mockToken = 'test-token';
-    (api.login as any).mockResolvedValueOnce({ access_token: mockToken });
+    (api.login as Mock<(credentials: LoginCredentials) => Promise<LoginResponse>>)
+      .mockResolvedValueOnce({
+        access_token: mockToken,
+        token_type: 'bearer'
+      });
 
     renderLogin();
 
@@ -55,22 +65,31 @@ describe('Login Component', () => {
 
     await userEvent.type(emailInput, 'test@example.com');
     await userEvent.type(passwordInput, 'password123');
-    fireEvent.click(submitButton);
+    await userEvent.click(submitButton);
 
     await waitFor(() => {
       expect(api.login).toHaveBeenCalledWith({
         email: 'test@example.com',
         password: 'password123',
       });
+    });
+
+    await waitFor(() => {
+      expect(api.setAuthToken).toHaveBeenCalledWith(mockToken);
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
 
   it('displays error message on login failure', async () => {
     const errorMessage = 'Invalid email or password';
-    (api.login as any).mockRejectedValueOnce({
-      response: { status: 401 },
-    });
+    (api.login as Mock<(credentials: LoginCredentials) => Promise<LoginResponse>>)
+      .mockRejectedValueOnce({
+        isAxiosError: true,
+        response: {
+          status: 401,
+          data: { message: 'Invalid email or password' }
+        }
+      });
 
     renderLogin();
 
@@ -80,7 +99,7 @@ describe('Login Component', () => {
 
     await userEvent.type(emailInput, 'test@example.com');
     await userEvent.type(passwordInput, 'wrongpass');
-    fireEvent.click(submitButton);
+    await userEvent.click(submitButton);
 
     await waitFor(() => {
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
@@ -102,7 +121,7 @@ describe('Login Component', () => {
   });
 
   it('disables submit button while loading', async () => {
-    (api.login as any).mockImplementationOnce(() => new Promise(() => {})); // Never resolves
+    (api.login as Mock<(credentials: LoginCredentials) => Promise<LoginResponse>>).mockImplementationOnce(() => new Promise(() => {})); // Never resolves
 
     renderLogin();
 
