@@ -18,6 +18,23 @@ services:
     networks:
       - url-shortener-network
 
+  backend-test:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.backend
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - url-shortener-network
+    command: pytest -v --cov=. --cov-report=term-missing
+
   frontend:
     build:
       context: .
@@ -32,6 +49,20 @@ services:
     depends_on:
       backend:
         condition: service_started
+    networks:
+      - url-shortener-network
+
+  frontend-test:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.frontend.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - CI=true
+    command: npm test
     networks:
       - url-shortener-network
 
