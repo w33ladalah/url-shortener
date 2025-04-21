@@ -51,7 +51,7 @@ postgres_data/
 .vscode/
 *.swp
 *.swo
-*~
+# .env
 
 # Logs
 logs/
