@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
-import { Form, Button, Alert, Container, Row, Col } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Form, Button, Alert, Container, Row, Col, ProgressBar } from 'react-bootstrap';
 import { useNavigate, Link } from 'react-router-dom';
 import { register } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+
+interface PasswordStrength {
+  score: number;
+  feedback: string[];
+}
 
 export function Register() {
   const [credentials, setCredentials] = useState({
@@ -13,8 +18,58 @@ export function Register() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>({ score: 0, feedback: [] });
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const validatePassword = (password: string): PasswordStrength => {
+    const strength: PasswordStrength = { score: 0, feedback: [] };
+
+    // Length check
+    if (password.length < 8) {
+      strength.feedback.push('Password must be at least 8 characters long');
+    } else {
+      strength.score += 1;
+    }
+
+    // Uppercase letter check
+    if (!/[A-Z]/.test(password)) {
+      strength.feedback.push('Add an uppercase letter');
+    } else {
+      strength.score += 1;
+    }
+
+    // Lowercase letter check
+    if (!/[a-z]/.test(password)) {
+      strength.feedback.push('Add a lowercase letter');
+    } else {
+      strength.score += 1;
+    }
+
+    // Number check
+    if (!/\d/.test(password)) {
+      strength.feedback.push('Add a number');
+    } else {
+      strength.score += 1;
+    }
+
+    // Special character check
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      strength.feedback.push('Add a special character');
+    } else {
+      strength.score += 1;
+    }
+
+    return strength;
+  };
+
+  useEffect(() => {
+    if (credentials.password) {
+      setPasswordStrength(validatePassword(credentials.password));
+    } else {
+      setPasswordStrength({ score: 0, feedback: [] });
+    }
+  }, [credentials.password]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +82,20 @@ export function Register() {
     }
 
     // Validate password strength
-    if (credentials.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    const strength = validatePassword(credentials.password);
+    if (strength.score < 5) {
+      setError('Password is not strong enough. Please address all requirements.');
+      return;
+    }
+
+    // Validate username
+    if (credentials.username.length < 3) {
+      setError('Username must be at least 3 characters long');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_-]+$/.test(credentials.username)) {
+      setError('Username can only contain letters, numbers, underscores, and hyphens');
       return;
     }
 
@@ -54,6 +121,13 @@ export function Register() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setCredentials(prev => ({ ...prev, [name]: value }));
+  };
+
+  const getPasswordStrengthVariant = (score: number): string => {
+    if (score === 0) return 'danger';
+    if (score < 3) return 'warning';
+    if (score < 5) return 'info';
+    return 'success';
   };
 
   return (
@@ -89,7 +163,12 @@ export function Register() {
                   onChange={handleChange}
                   required
                   placeholder="Choose a username"
+                  pattern="[a-zA-Z0-9_-]+"
+                  minLength={3}
                 />
+                <Form.Text className="text-muted">
+                  Username must be at least 3 characters long and can only contain letters, numbers, underscores, and hyphens
+                </Form.Text>
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -102,9 +181,26 @@ export function Register() {
                   required
                   placeholder="Create a password"
                 />
-                <Form.Text className="text-muted">
-                  Password must be at least 8 characters long
-                </Form.Text>
+                {credentials.password && (
+                  <>
+                    <div className="mt-2">
+                      <ProgressBar
+                        variant={getPasswordStrengthVariant(passwordStrength.score)}
+                        now={(passwordStrength.score / 5) * 100}
+                      />
+                    </div>
+                    {passwordStrength.feedback.length > 0 && (
+                      <Form.Text className="text-muted">
+                        <div className="mt-2">Password requirements:</div>
+                        <ul className="mt-1 mb-0">
+                          {passwordStrength.feedback.map((feedback, index) => (
+                            <li key={index}>{feedback}</li>
+                          ))}
+                        </ul>
+                      </Form.Text>
+                    )}
+                  </>
+                )}
               </Form.Group>
 
               <Form.Group className="mb-4">
