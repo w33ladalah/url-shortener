@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { LoginCredentials } from '../types';
 import { login as apiLogin } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import axios from 'axios';
 
 export function Login() {
   const [credentials, setCredentials] = useState<LoginCredentials>({
@@ -22,10 +23,14 @@ export function Login() {
 
     try {
       const response = await apiLogin(credentials);
-      login(response.access_token, response.user);
+      await login(response.access_token);
       navigate('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        setError('Invalid email or password');
+      } else {
+        setError(err instanceof Error ? err.message : 'Login failed');
+      }
     } finally {
       setLoading(false);
     }

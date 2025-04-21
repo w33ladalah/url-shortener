@@ -4,7 +4,11 @@ import { Container, Nav, Navbar, Row, Col, Form, Button, Card, Alert, Toast } fr
 import { Login } from './components/Login'
 import { Register } from './components/Register'
 import { useAuth } from './contexts/AuthContext'
+import { shortenUrl } from './services/api'
 import './App.css'
+
+// Get the API base URL from environment variable, removing '/api' if present
+const BASE_URL = import.meta.env.VITE_API_URL?.replace(/\/api$/, '') || 'http://localhost:8000'
 
 function Home() {
   const [url, setUrl] = useState('')
@@ -14,35 +18,20 @@ function Home() {
   const [error, setError] = useState('')
   const [showCopyToast, setShowCopyToast] = useState(false)
 
-  const shortenUrl = async (e: React.FormEvent) => {
+  const handleShortenUrl = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
     try {
-      const requestBody = {
+      const response = await shortenUrl({
         original_url: url,
         ...(customShortCode && { custom_short_code: customShortCode })
-      }
+      });
 
-      const response = await fetch('/api/urls/shorten', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to shorten URL')
-      }
-
-      const data = await response.json()
-      const baseUrl = window.location.origin
-      setShortUrl(`${baseUrl}/${data.short_code}`)
+      setShortUrl(`${BASE_URL}/${response.short_code}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred')
+      setError(err instanceof Error ? err.message : 'Failed to shorten URL')
     } finally {
       setLoading(false)
     }
@@ -59,7 +48,7 @@ function Home() {
       <Col md={8} lg={6}>
         <h1 className="text-center mb-4">URL Shortener</h1>
 
-        <Form onSubmit={shortenUrl}>
+        <Form onSubmit={handleShortenUrl}>
           <Form.Group className="mb-3">
             <Form.Label>Enter URL to shorten</Form.Label>
             <Form.Control
@@ -78,7 +67,7 @@ function Home() {
               value={customShortCode}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCustomShortCode(e.target.value)}
               placeholder="e.g., my-link"
-              pattern="[a-zA-Z0-9_-]+"
+              pattern="^[a-zA-Z0-9_-]+$"
               minLength={3}
               maxLength={20}
               title="Letters, numbers, hyphens and underscores only (3-20 characters)"

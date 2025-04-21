@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
+import { setAuthToken, getCurrentUser } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (token: string, user: User) => void;
+  login: (token: string) => void;
   logout: () => void;
 }
 
@@ -14,27 +15,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
+  const fetchUser = async () => {
+    try {
+      const userData = await getCurrentUser();
+      setUser(userData);
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+      // If we can't fetch user data, we should probably log out
+      logout();
+    }
+  };
+
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
 
-    if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
+    if (storedToken) {
       setToken(storedToken);
+      setAuthToken(storedToken);
+      fetchUser();
     }
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    setUser(newUser);
+  const login = async (newToken: string) => {
     setToken(newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
+    setAuthToken(newToken);
     localStorage.setItem('token', newToken);
+    await fetchUser();
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
 

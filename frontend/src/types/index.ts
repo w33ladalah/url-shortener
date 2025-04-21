@@ -29,7 +29,4 @@ export interface RegisterCredentials extends LoginCredentials {
   username: string;
 }
 
-export interface LoginResponse {
-  access_token: string;
-  user: User;
-}
+export interface LoginResponse extends AuthResponse {}
