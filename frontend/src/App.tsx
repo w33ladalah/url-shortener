@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom'
 import { Container, Nav, Navbar, Row, Col, Form, Button, Card, Alert, Toast } from 'react-bootstrap'
 import { Login } from './components/Login'
+import { Register } from './components/Register'
 import { useAuth } from './contexts/AuthContext'
 import './App.css'
 
@@ -175,7 +176,10 @@ function App() {
                     <Nav.Link as={Link} to="/profile">Profile</Nav.Link>
                   </>
                 ) : (
-                  <Nav.Link as={Link} to="/login">Login</Nav.Link>
+                  <>
+                    <Nav.Link as={Link} to="/login">Login</Nav.Link>
+                    <Nav.Link as={Link} to="/register">Sign Up</Nav.Link>
+                  </>
                 )}
               </Nav>
             </Navbar.Collapse>
@@ -186,6 +190,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route
               path="/dashboard"
               element={user ? <div>Dashboard (Coming Soon)</div> : <Navigate to="/login" />}
