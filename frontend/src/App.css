@@ -42,10 +42,7 @@
 }
 
 .container {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  max-width: 900px;
 }
 
 h1 {
@@ -124,4 +121,19 @@ h1 {
   .input {
     flex: 1;
   }
+}
+
+/* Custom styles to enhance Bootstrap */
+.shortened-url-container {
+  position: relative;
+}
+
+/* Add some animation for copy button */
+.btn-copy-flash {
+  animation: flash 0.3s;
+}
+
+@keyframes flash {
+  0% { background-color: #198754; }
+  100% { background-color: transparent; }
 }
