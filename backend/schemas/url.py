@@ -1,4 +1,4 @@
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, HttpUrl, Field
 from datetime import datetime
 from typing import Optional
 
@@ -6,7 +6,7 @@ class URLBase(BaseModel):
     original_url: HttpUrl
 
 class URLCreate(URLBase):
-    pass
+    custom_short_code: Optional[str] = Field(None, min_length=3, max_length=20, pattern=r'^[a-zA-Z0-9_-]+$')
 
 class URL(URLBase):
     id: int

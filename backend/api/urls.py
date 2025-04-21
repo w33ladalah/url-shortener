@@ -15,11 +15,22 @@ def generate_short_code(length=6):
 
 @router.post("/shorten", response_model=URLSchema)
 def create_short_url(url: URLCreate, db: Session = Depends(get_db)):
-    short_code = generate_short_code()
-
-    # Check if the short code already exists
-    while db.query(URL).filter(URL.short_code == short_code).first():
+    # Use custom short code if provided and valid
+    if url.custom_short_code:
+        # Check if custom short code already exists
+        existing_url = db.query(URL).filter(URL.short_code == url.custom_short_code).first()
+        if existing_url:
+            raise HTTPException(
+                status_code=400,
+                detail="This custom short code is already in use. Please choose another one."
+            )
+        short_code = url.custom_short_code
+    else:
+        # Generate random short code if not provided
         short_code = generate_short_code()
+        # Check if the short code already exists
+        while db.query(URL).filter(URL.short_code == short_code).first():
+            short_code = generate_short_code()
 
     db_url = URL(original_url=str(url.original_url), short_code=short_code)
     db.add(db_url)
