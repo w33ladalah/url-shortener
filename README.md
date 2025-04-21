@@ -1,12 +1,43 @@
 # URL Shortener
 
-A full-stack URL shortener application with FastAPI backend and React frontend.
+A full-stack URL shortener application with FastAPI backend and React+Bootstrap frontend.
+
+## Features
+
+- Shorten any URL with a randomly generated code
+- Create custom short codes for your URLs
+- Redis caching for improved performance
+- Copy to clipboard functionality
+- Responsive Bootstrap UI
+- Track click statistics for your shortened URLs
+- Docker containerization for easy deployment
 
 ## Project Structure
 
-- `/backend`: FastAPI backend
-- `/frontend`: React + TypeScript (Vite) frontend
+- `/backend`: FastAPI backend with SQLAlchemy and Redis
+- `/frontend`: React + TypeScript + Bootstrap (Vite) frontend
 - `/docker`: Dockerfiles for backend and frontend
+- Docker Compose configuration for the entire stack
+
+## Technologies Used
+
+### Backend
+- FastAPI - Modern, high-performance web framework
+- SQLAlchemy - SQL toolkit and ORM
+- Redis - In-memory caching
+- PostgreSQL - Relational database
+- Pydantic - Data validation
+
+### Frontend
+- React - UI library
+- TypeScript - Type-safe JavaScript
+- Bootstrap - UI component library
+- Vite - Build tool and development server
+
+### Infrastructure
+- Docker & Docker Compose - Containerization
+- Nginx - Web server and reverse proxy
+- Adminer - Database management
 
 ## Requirements
 
@@ -30,6 +61,7 @@ A full-stack URL shortener application with FastAPI backend and React frontend.
    - Frontend: http://localhost
    - Backend API: http://localhost/api
    - API Documentation: http://localhost/api/docs
+   - Adminer (DB Management): http://localhost:8080
 
 ## Development
 
@@ -48,6 +80,16 @@ cd frontend
 npm install
 npm run dev
 ```
+
+## API Endpoints
+
+- `POST /api/urls/shorten` - Create a new short URL
+  - Request body: `{ "original_url": "https://example.com", "custom_short_code": "my-code" }`
+  - Custom short code is optional
+
+- `GET /api/urls/{short_code}` - Redirect to the original URL
+
+- `GET /api/urls/stats/{short_code}` - Get stats for a short URL
 
 ## License
 
